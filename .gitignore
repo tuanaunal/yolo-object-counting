@@ -1,0 +1,33 @@
+# Python sanal ortamı (Virtual Environment)
+venv/
+env/
+.venv/
+
+# Python derleme ve önbellek dosyaları
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+
+# YOLO Model Ağırlıkları (Büyük dosyalar GitHub'a yüklenmemeli)
+*.pt
+*.onnx
+*.engine
+
+# Test ve Çıktı Videoları / Resimleri (Görsel ve video dosyaları)
+*.mp4
+*.avi
+*.mov
+*.mkv
+*.jpg
+*.png
+*.jpeg
+!assets/  # Eğer projenize özel küçük ikon/resim koyacaksanız bunu muaf tutar
+
+# Proje / Editör Ayarları
+.vscode/
+.idea/
+*.swp
+
+# Çevre Değişkenleri (Gizli anahtarlar vs.)
+.env
