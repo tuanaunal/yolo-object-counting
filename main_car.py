@@ -48,11 +48,56 @@ while True:
     if not success:
         exit("Video acilamadi")
 
-    frame = cv2.resize(frame, (0, 0), fx=0.6, fy=0.6)
+    frame = cv2.resize(frame, (0, 0), fx=0.6, fy=0.6)  # boyutunu ayarlama
 
-    # simdilik line cizme
+    # tracking arac takibi
+    results = model.track(frame, persist=True, stream=False, conf=0.5, iou=0.5, tracker="bytetrack.yaml")
+
+    if results[0].boxes.id is not None:  # eger takip edilen obje varsa
+        ids = results[0].boxes.id.int().tolist()  # tum id leri almis olduk
+        classes = results[0].boxes.cls.int().tolist()  # tum classlari almis olduk
+        xyxy = results[0].boxes.xyxy  # koordinatlar
+
+        for i, box in enumerate(xyxy):
+            cls_id = classes[i]
+            track_id = ids[i]
+            class_name = model.names[cls_id]
+            if class_name not in counts:
+                continue
+
+            x1, y1, x2, y2 = map(int, box)  # kutunun x ve y koordinatlarini al
+            # merkezi bul
+            cx = int((x1 + x2) / 2)
+            cy = int((y1 + y2) / 2)
+
+            current_side = get_line_side(cx, cy, line_start, line_end)  # aracin cizginin hangi tarafinda oldugunu bul
+            previous_side = object_last_side.get(track_id, None)  # bir oneki frame de hangi tarafta oldugu
+            object_last_side[track_id] = current_side  # last side guncelleme
+
+            if previous_side is not None and previous_side != current_side:  # cizgiden gecme durumu
+                if track_id not in counted_ids:
+                    counted_ids.add(track_id)
+                    counts[class_name] += 1  # count 1 arttir
+
+            # kutulari cizme
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+            cv2.putText(frame, f"{class_name} ID: {track_id}", (x1, y1 - 8), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 255, 255), 2)
+            cv2.circle(frame, (cx, cy), 4, (255, 0, 0), -1)
+
+    # capraz line cizme
     cv2.line(frame, line_start, line_end, (0, 0, 255), 2)
 
+    # sayaclari goster
+    y_offset = 30
+    for cls, count in counts.items():
+        text = f"{cls}: {count}"
+        cv2.putText(frame, text, (10, y_offset), cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 2)
+        y_offset += 30
+
+    # goster
     cv2.imshow("arac takip ve sayim", frame)
     if cv2.waitKey(1) & 0xFF == ord("q"):
         break
+
+cap.release()
+cv2.destroyAllWindows()
